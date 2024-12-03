@@ -1,0 +1,36 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  password String
+  lendings Lending[]
+}
+
+model Book {
+  id           Int       @id @default(autoincrement())
+  title        String
+  author_name  String
+  release_date DateTime
+  lendings     Lending[]
+}
+
+model Lending {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  book_id         Int
+  lending_date    DateTime
+  end_lending_date DateTime
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, book_id, lending_date])
+}
