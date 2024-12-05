@@ -1,13 +1,12 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "../../db";
+import { books } from "../../db/schema";
 
 export const handler = async () => {
   try {
-    const books = await prisma.book.findMany();
+    const allBooks = await db.select().from(books);
     return {
       statusCode: 200,
-      body: JSON.stringify(books),
+      body: JSON.stringify(allBooks),
     };
   }
   catch (error) {

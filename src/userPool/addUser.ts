@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { db } from "../db";
+import { users } from "../db/schema";
 import { addUserSchema } from "./schema/zod";
-
-const prisma = new PrismaClient();
 
 export const handler = async (event: any) => {
   const parsedBody = addUserSchema.safeParse(JSON.parse(event.body));
@@ -18,12 +17,13 @@ export const handler = async (event: any) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    const newUser = await prisma.user.create({
-      data: {
+    const [ newUser ] = await db.insert(users)
+      .values({
         email,
         password: hashedPassword,
-      },
-    });
+      })
+      .returning();
+
     return {
       statusCode: 200,
       body: JSON.stringify(newUser),

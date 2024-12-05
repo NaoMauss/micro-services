@@ -21,6 +21,7 @@ const commonBundlingConfig = {
   externalModules: [
     "@aws-sdk/*",
     "bcrypt",
+    "pg-native",
   ],
 };
 

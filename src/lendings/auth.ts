@@ -1,10 +1,11 @@
 import { env } from "node:process";
-import { PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { db } from "../db";
+import { users } from "../db/schema";
 
-const prisma = new PrismaClient();
 const JWT_SECRET = env.JWT_SECRET || "your_jwt_secret";
 
 const authSchema = z.object({
@@ -25,9 +26,10 @@ export const handler = async (event: any) => {
   const { email, password } = parsedBody.data;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const [ user ] = await db.select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (!user) {
       return {

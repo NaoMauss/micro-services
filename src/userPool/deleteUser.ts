@@ -1,27 +1,32 @@
-import { PrismaClient } from "@prisma/client";
-import { deleteUserSchema } from "./schema/zod";
-
-const prisma = new PrismaClient();
+import bcrypt from "bcrypt";
+import { db } from "../db";
+import { users } from "../db/schema";
+import { addUserSchema } from "./schema/zod";
 
 export const handler = async (event: any) => {
-  const parsedParams = deleteUserSchema.safeParse(event.pathParameters);
+  const parsedBody = addUserSchema.safeParse(JSON.parse(event.body));
 
-  if (!parsedParams.success) {
+  if (!parsedBody.success) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: parsedParams.error.errors }),
+      body: JSON.stringify({ error: parsedBody.error.errors }),
     };
   }
 
-  const { id } = parsedParams.data;
+  const { email, password } = parsedBody.data;
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    await prisma.user.delete({
-      where: { id: Number.parseInt(id) },
-    });
+    const [ newUser ] = await db.insert(users)
+      .values({
+        email,
+        password: hashedPassword,
+      })
+      .returning();
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "User and related lendings deleted successfully" }),
+      body: JSON.stringify(newUser),
     };
   }
   catch (error) {

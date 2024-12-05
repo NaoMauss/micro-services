@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { users } from "../db/schema";
 import { getUserSchema } from "./schema/zod";
-
-const prisma = new PrismaClient();
 
 export const handler = async (event: any) => {
   const parsedBody = getUserSchema.safeParse(JSON.parse(event.body));
@@ -16,11 +16,10 @@ export const handler = async (event: any) => {
   const { id } = parsedBody.data;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: {
-        id: Number.parseInt(id),
-      },
-    });
+    const [ user ] = await db.select()
+      .from(users)
+      .where(eq(users.id, Number.parseInt(id)))
+      .limit(1);
 
     if (!user) {
       return {

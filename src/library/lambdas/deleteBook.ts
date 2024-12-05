@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db } from "../../db";
+import { books } from "../../db/schema";
 import { deleteBookSchema } from "../schema/zod";
-
-const prisma = new PrismaClient();
 
 export const handler = async (event: any) => {
   const parsedParams = deleteBookSchema.safeParse(event.pathParameters);
@@ -16,9 +16,18 @@ export const handler = async (event: any) => {
   const { id } = parsedParams.data;
 
   try {
-    await prisma.book.delete({
-      where: { id: Number.parseInt(id) },
-    });
+    const [ deletedBook ] = await db
+      .delete(books)
+      .where(eq(books.id, Number.parseInt(id)))
+      .returning();
+
+    if (!deletedBook) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Book not found" }),
+      };
+    }
+
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Book deleted successfully" }),

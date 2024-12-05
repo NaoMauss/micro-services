@@ -1,12 +1,12 @@
 import { env } from "node:process";
-import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { CreateScheduleCommand, FlexibleTimeWindowMode, SchedulerClient } from "@aws-sdk/client-scheduler";
+import { lendings } from "../db/schema";
+import { db } from "../db";
 
-const prisma = new PrismaClient();
 const JWT_SECRET = env.JWT_SECRET || "your_jwt_secret";
-const SCHEDULE_DELAY = 24 * 60 * 60 * 1000; // 1 jour en millisecondes
+const SCHEDULE_DELAY = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
 const lendBookSchema = z.object({
   book_id: z.number(),
@@ -49,14 +49,14 @@ export const handler = async (event: any) => {
   const { book_id } = parsedBody.data;
 
   try {
-    const lending = await prisma.lending.create({
-      data: {
-        user_id: userId,
-        book_id,
-        lending_date: new Date(),
-        end_lending_date: new Date(Date.now() + SCHEDULE_DELAY),
-      },
-    });
+    const [ lending ] = await db.insert(lendings)
+      .values({
+        userId,
+        bookId: book_id,
+        lendingDate: new Date(),
+        endLendingDate: new Date(Date.now() + SCHEDULE_DELAY),
+      })
+      .returning();
 
     const schedulerClient = new SchedulerClient({ region: "us-east-1" });
 
